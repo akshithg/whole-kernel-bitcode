@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 from pathlib import Path
 from typing import List
@@ -41,6 +42,33 @@ skip_bitcode_files = [
         "usr/initramfs_data.bc",
     ]
 ]
+
+
+def make_compile_commands():
+    # make compile_commands.json
+    cmd = f"cd {kernel_build_folder} && scripts/clang-tools/gen_compile_commands.py -d {kernel_build_folder} -o {kernel_build_folder}/compile_commands.json"
+    os.system()
+
+
+def make_bitcode():
+    compile_commads = kernel_build_folder / "compile_commands.json"
+    assert compile_commads.exists()
+
+    with open(compile_commads, "r") as f:
+        compile_commands = json.load(f)
+
+        for unit in compile_commands:
+            file = unit["file"]
+            cmd = unit["command"]
+            cmd = cmd.replace("-c ", "-emit-llvm -c ")
+            x = cmd.split()
+            obj_file = x[x.index("-o") + 1]
+            bc_file = obj_file.replace(".o", ".bc")
+            cmd = cmd.replace(obj_file, bc_file)
+            if "/outputs/" in file:
+                src_file = x[-1]
+                cmd = cmd.replace(src_file, file)
+            os.system(cmd)
 
 
 def copy_to_bitcode_folder(src_file: Path):
@@ -193,6 +221,9 @@ def build_full_bitcode():
 
 
 def main():
+    # make_compile_commands()
+    # make_bitcode()
+
     build_builtin_files = list(kernel_build_folder.glob("**/" + BUILTIN_CMD_FILE))
     print(
         "total built-in.a.cmd files in kernel build folder:", len(build_builtin_files)
