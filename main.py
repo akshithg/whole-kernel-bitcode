@@ -1,6 +1,4 @@
-def main():
-    print("Hello from whole-kernel-bitcode!")
-
+from kbitcode import main
 
 if __name__ == "__main__":
     main()
